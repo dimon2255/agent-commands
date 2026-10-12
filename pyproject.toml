@@ -1,0 +1,33 @@
+[project]
+name = "agent-commands"
+version = "0.1.0"
+description = "Claude Code skills with evaluation suites: schema-guided extraction, calibrated LLM-as-judge grading, and codebase-grounded architecture decision records."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Dimitri Pankov" }]
+dependencies = [
+  "anthropic>=1.13,<2",
+  "jsonschema>=4.23",
+  "pyyaml>=6.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "skills"]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["evals/results", "evals/native/results"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]

@@ -1,0 +1,14 @@
+{
+  "name": "dimon2255",
+  "owner": { "name": "Dimitri Pankov", "url": "https://github.com/dimon2255" },
+  "description": "Claude Code skills by Dimitri Pankov, each with an evaluation suite.",
+  "plugins": [
+    {
+      "name": "agent-commands",
+      "source": ".",
+      "description": "extract, judge and adr skills with API-level and native eval suites",
+      "version": "0.1.0",
+      "category": "productivity"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Timestamped eval runs are reproducible from the committed summary; keep only latest/
+evals/results/api/*/20*/
+evals/results/api/*/work/
+evals/native/results/
+
+# Local scratch
+.scratch/
+*.local.*
+.env

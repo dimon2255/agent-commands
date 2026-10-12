@@ -1,0 +1,10 @@
+{
+  "name": "agent-commands",
+  "version": "0.1.0",
+  "description": "Three production-shaped Claude Code skills, each shipped with a measured evaluation suite: schema-guided extraction with a validate-and-repair loop, a calibrated LLM-as-judge grader with position-bias control, and a codebase-grounded architecture decision record author.",
+  "author": { "name": "Dimitri Pankov", "url": "https://github.com/dimon2255" },
+  "license": "MIT",
+  "keywords": ["skills", "evals", "structured-outputs", "llm-as-judge", "adr"],
+  "skills": ["./skills/"],
+  "experimental": { "evals": "evals/native" }
+}

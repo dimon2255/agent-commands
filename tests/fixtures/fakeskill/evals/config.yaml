@@ -1,0 +1,20 @@
+skill: fakeskill
+entrypoint: scripts/fake.py
+cases: evals/cases.jsonl
+graders_module: evals/graders.py
+timeout_seconds: 30
+null_output: {}
+metrics:
+  - name: answer_exact
+    grader: exact
+    target: "$output.answer"
+    expected: "$expected.answer"
+  - name: schema_valid
+    grader: json_schema
+    target: "$output"
+    schema: "$input.schema"
+  - name: custom_len
+    grader: python
+    function: answer_is_short
+thresholds:
+  answer_exact: 0.5
