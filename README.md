@@ -28,7 +28,22 @@ scored attempts; the bracket is the 95% Wilson interval.
 
 Native `claude plugin eval` (inside Claude Code, two-arm ablation, 2 runs per case):
 <!-- NATIVE:START -->
-pending final run.
+
+| case | with plugin | without plugin | delta |
+|---|---|---|---:|
+| `extract-invoice-inline` | 1.00, 1.00 | 1.00, 1.00 | 0.00 |
+| `extract-ticket-missing-field` | 1.00, 0.60 | 0.60, 0.60 | +0.20 |
+| `judge-pairwise-shorter-wins` | 1.00, 1.00 | 0.33, 0.33 | +0.67 |
+| `judge-pointwise-rubric` | 1.00, 1.00 | 0.75, 0.75 | +0.25 |
+| `adr-session-store` | 1.00, 1.00 | 0.80, 0.80 | +0.20 |
+| `adr-respects-constraint` | 1.00, 1.00 | 1.00, 1.00 | 0.00 |
+
+The skill fired in 12 of 12 with-plugin runs. Mean delta over no plugin +0.22; the
+plugin's contribution shows where the task needs discipline the base model lacks: judging
+both orders and refusing to reward the longer reply, stating a verdict in a checkable
+form, and writing alternatives into the record. Where the base model already does the
+task well (a clean invoice, an explicit ADR request) the delta is zero, which is the
+honest reading of a saturated case. Details: [`evals/native/RESULTS.md`](evals/native/RESULTS.md).
 <!-- NATIVE:END -->
 
 What these numbers do and do not say: both finished suites are **saturated**. The model
