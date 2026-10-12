@@ -1,0 +1,58 @@
+name: api-evals
+
+# Spends real money against CLAUDE_API_KEY, so it only runs on demand.
+# Set the repository secret CLAUDE_API_KEY before dispatching.
+
+on:
+  workflow_dispatch:
+    inputs:
+      skill:
+        description: "skill to evaluate (extract | judge | adr | all)"
+        default: "all"
+      reps:
+        description: "repetitions per case"
+        default: "1"
+      limit:
+        description: "max cases per skill (blank = all)"
+        default: ""
+      model:
+        description: "model under test"
+        default: "claude-opus-5-5"
+      judge_model:
+        description: "judge model for llm_rubric metrics"
+        default: "claude-opus-5-5"
+
+permissions:
+  contents: read
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv python install 3.12
+      - run: uv sync --frozen
+      - name: run evals
+        # Inputs go through env, never into the script text, so a dispatcher cannot inject shell.
+        env:
+          IN_SKILL: ${{ inputs.skill }}
+          IN_REPS: ${{ inputs.reps }}
+          IN_LIMIT: ${{ inputs.limit }}
+          IN_MODEL: ${{ inputs.model }}
+          IN_JUDGE: ${{ inputs.judge_model }}
+        run: |
+          set -eu
+          ARGS=(--reps "$IN_REPS" --model "$IN_MODEL" --judge-model "$IN_JUDGE" --concurrency 4)
+          if [ -n "$IN_LIMIT" ]; then ARGS+=(--limit "$IN_LIMIT"); fi
+          if [ "$IN_SKILL" = "all" ]; then ARGS+=(--all); else ARGS+=(--skill "$IN_SKILL"); fi
+          uv run evals/run.py "${ARGS[@]}"
+      - name: upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: evals/results/api/**/latest/
