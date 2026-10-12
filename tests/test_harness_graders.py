@@ -59,6 +59,14 @@ def test_paths_subset_scores_partially():
     assert not g.passed and abs(g.score - 2 / 3) < 1e-9 and "zzz" in g.evidence
     empty = run_metric({"name": "p", "grader": "paths_subset", "target": "$output.none", "allowed": []}, ctx({"none": []}))
     assert empty.passed
+    # leading ./ is stripped; dot-directories and parent references are preserved
+    dotted = run_metric(
+        {"name": "p", "grader": "paths_subset", "target": "$output.paths", "allowed": [".github/ci.yml", "../x.py"]},
+        ctx({"paths": ["./.github/ci.yml", "../x.py"]}),
+    )
+    assert dotted.passed, dotted.evidence
+    parent = run_metric({"name": "p", "grader": "paths_subset", "target": "$output.paths", "allowed": ["x.py"]}, ctx({"paths": ["../x.py"]}))
+    assert not parent.passed
 
 
 def test_unknown_grader_raises():

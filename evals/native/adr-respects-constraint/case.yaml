@@ -1,0 +1,37 @@
+schema_version: "1.1"
+name: adr-respects-constraint
+description: >-
+  Skill triggers on an explicit ADR request, honours the repository's
+  no-new-infrastructure policy when a teammate suggests Celery with Redis, and writes
+  docs/adr/002-nightly-invoice-export.md in the workspace.
+tags: [adr]
+runs: 2
+execution:
+  prompt: |
+    Write an ADR on how we should run the nightly invoice export as a scheduled background job.
+    Someone on the team suggested Celery with Redis. The code is in the read-only `fixture`
+    directory you have access to. Save the ADR as docs/adr/002-nightly-invoice-export.md in the
+    current working directory (create the folders if needed).
+  max_turns: 20
+  timeout_seconds: 420
+  allowed_tools: [Read, Glob, Grep, Skill, Write]
+context:
+  add_dirs: [fixture]
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adr"'
+  - name: adr-file-written
+    type: file_exists
+    path: "docs/adr/002-*.md"
+  - name: has-alternatives-section
+    type: regex
+    pattern: '## Alternatives considered'
+    target: { source: file, path: "docs/adr/002-nightly-invoice-export.md" }
+  - name: no-placeholders
+    type: regex
+    pattern: 'TBD|TODO'
+    flags: i
+    match: not_contains
+    target: { source: file, path: "docs/adr/002-nightly-invoice-export.md" }

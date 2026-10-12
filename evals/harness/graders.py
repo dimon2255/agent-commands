@@ -129,7 +129,7 @@ def _g_paths_subset(metric: dict, ctx: GradeContext) -> Grade:
     allowed = set(ctx.arg(metric, "allowed") or [])
     if not isinstance(target, list):
         return Grade(0.0, False, f"target is {type(target).__name__}, expected list")
-    norm = lambda p: str(p).replace("\\", "/").lstrip("./")  # noqa: E731
+    norm = lambda p: re.sub(r"^(\./)+", "", str(p).replace("\\", "/"))  # noqa: E731 - strip leading ./ only
     allowed_n = {norm(p) for p in allowed}
     bad = [p for p in target if norm(p) not in allowed_n]
     if not target:

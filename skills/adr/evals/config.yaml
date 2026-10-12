@@ -1,0 +1,63 @@
+skill: adr
+entrypoint: scripts/adr.py
+cases: evals/cases.jsonl
+graders_module: evals/graders.py
+timeout_seconds: 300
+null_output:
+  number: 0
+  slug: ""
+  title: ""
+  markdown: ""
+  alternatives: []
+  referenced_paths: []
+  consequences: {positive: [], negative: []}
+  path_check: {referenced: [], unknown: []}
+metrics:
+  # Structure: the five house headers (title, Context, Decision, Alternatives considered, Consequences).
+  - name: sections_present
+    grader: python
+    function: sections_present
+  # At least two alternatives, both in the JSON and as list items in the markdown section.
+  - name: two_plus_alternatives
+    grader: python
+    function: two_plus_alternatives
+  # At least one negative consequence that also appears (first 30 chars) in the Consequences section.
+  - name: negative_consequence_present
+    grader: python
+    function: negative_consequence_present
+  # Every path-like token in the markdown resolves into the context pack; at least one is cited.
+  - name: paths_grounded
+    grader: python
+    function: paths_grounded
+  # Decoy paths mentioned by pack files but absent from the pack are never cited (n/a when none).
+  - name: forbidden_path_absent
+    grader: python
+    function: forbidden_path_absent
+  - name: number_correct
+    grader: exact
+    target: "$output.number"
+    expected: "$expected.number"
+  - name: no_placeholders
+    grader: regex
+    target: "$output.markdown"
+    pattern: '\b(TBD|TODO|lorem ipsum|placeholder)\b'
+    flags: i
+    match: not_contains
+  # Each constraint's key words appear in the record (n/a when the case has none).
+  - name: constraints_named
+    grader: python
+    function: constraints_named
+  # Judge: does the decision respect the constraints and the context. The judge sees only the
+  # decision text and the record, so each per-case rubric spells out the facts it checks against.
+  - name: decision_fits_context
+    grader: llm_rubric
+    rubric: "$expected.rubric"
+    target: "$output.markdown"
+    context: "$input.decision"
+thresholds:
+  sections_present: 0.95
+  two_plus_alternatives: 0.90
+  negative_consequence_present: 0.90
+  paths_grounded: 0.90
+  number_correct: 0.95
+  no_placeholders: 1.0

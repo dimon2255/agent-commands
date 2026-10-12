@@ -18,7 +18,8 @@ JUDGE_SCHEMA = {
     "type": "object",
     "properties": {
         "passed": {"type": "boolean"},
-        "score": {"type": "integer", "minimum": 1, "maximum": 5},
+        # enum, not minimum/maximum: the structured-output grammar rejects numeric bounds (ADR 003)
+        "score": {"type": "integer", "enum": [1, 2, 3, 4, 5]},
         "rationale": {"type": "string"},
     },
     "required": ["passed", "score", "rationale"],

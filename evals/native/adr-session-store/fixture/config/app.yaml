@@ -1,0 +1,17 @@
+service: shop-api
+replicas: 3
+
+deploy:
+  strategy: rolling
+  max_unavailable: 1          # one replica is replaced at a time
+
+load_balancer:
+  algorithm: round_robin
+  session_affinity: none      # "cookie" affinity is supported but switched off
+
+database:
+  engine: postgres
+  version: "15"
+  host: shop-db.internal
+  pool_size_per_replica: 20
+  max_connections: 200        # instance limit; peak use is about 70

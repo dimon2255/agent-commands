@@ -1,0 +1,37 @@
+schema_version: "1.1"
+name: adr-session-store
+description: >-
+  Skill triggers without the word "ADR" in the prompt, grounds the record in the fixture
+  repo, and writes docs/decisions/002-session-state-store.md in the workspace.
+tags: [adr]
+runs: 2
+execution:
+  prompt: |
+    We're scaling the shop API to three replicas and users keep getting logged out at random.
+    The service's code is in the read-only `fixture` directory you have access to. Decide where
+    session state should live and write the decision up as a decision record for the team.
+    Save it as docs/decisions/002-session-state-store.md in the current working directory (create the
+    folders if needed).
+  max_turns: 20
+  timeout_seconds: 420
+  allowed_tools: [Read, Glob, Grep, Skill, Write]
+context:
+  add_dirs: [fixture]
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adr"'
+  - name: adr-file-written
+    type: file_exists
+    path: "docs/decisions/002-*.md"
+  - name: has-alternatives-section
+    type: regex
+    pattern: '## Alternatives considered'
+    target: { source: file, path: "docs/decisions/002-session-state-store.md" }
+  - name: no-placeholders
+    type: regex
+    pattern: 'TBD|TODO'
+    flags: i
+    match: not_contains
+    target: { source: file, path: "docs/decisions/002-session-state-store.md" }
