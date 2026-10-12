@@ -1,0 +1,40 @@
+schema_version: "1.1"
+name: extract-ticket-missing-field
+description: Skill triggers on a support email and leaves unstated fields null instead of guessing
+tags: [extract]
+runs: 2
+execution:
+  prompt: |
+    Can you turn this support email into structured data for our helpdesk import? I need ticket_id, customer_name, customer_email, category (one of billing, shipping, technical, account, other), order_id and refund_amount (a number), as JSON.
+
+    Ticket: TCK-30871
+    From: Nadia Haddad <nadia.haddad@protonmail.com>
+    Subject: Wrong size delivered
+
+    Hello, I ordered the Trail Runner jacket in size M, but the parcel contained a size XL. The tracking page says it was delivered on 2026-10-03, and the jacket cost $149.00. I'd like the correct size sent out; I don't want my money back. I can't find my order confirmation email, so I don't have the order number to hand, sorry.
+
+    Nadia
+  max_turns: 8
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Skill]
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?extract"'
+  - name: ticket-id-present
+    type: regex
+    pattern: '"ticket_id"\s*:\s*"TCK-30871"'
+    target: last_message
+  - name: order-id-null
+    type: regex
+    # Scoped to the data object (or a flat answer with no evidence object): a bare
+    # key-null pattern would also match a null evidence quote next to an invented value.
+    pattern: '"data"\s*:\s*\{[^{}]*"order_id"\s*:\s*null|^(?![\s\S]*"evidence")[\s\S]*"order_id"\s*:\s*null'
+    target: last_message
+  - name: refund-amount-null
+    type: regex
+    # Scoped to the data object (or a flat answer with no evidence object): a bare
+    # key-null pattern would also match a null evidence quote next to an invented value.
+    pattern: '"data"\s*:\s*\{[^{}]*"refund_amount"\s*:\s*null|^(?![\s\S]*"evidence")[\s\S]*"refund_amount"\s*:\s*null'
+    target: last_message

@@ -58,6 +58,7 @@ class RunOptions:
 
 
 def load_suite(skill_dir: Path) -> SkillSuite:
+    skill_dir = Path(skill_dir).resolve()
     cfg_path = skill_dir / "evals" / "config.yaml"
     if not cfg_path.exists():
         raise FileNotFoundError(f"{skill_dir.name}: no evals/config.yaml")
@@ -207,6 +208,14 @@ def _run_script(suite: SkillSuite, case: dict, rep: int, opts: RunOptions, workd
     return "row", row
 
 
+def _display_path(p: Path) -> str:
+    """Repo-relative when inside the repo, absolute otherwise (fixtures, temp dirs)."""
+    try:
+        return str(p.resolve().relative_to(REPO_ROOT)).replace("\\", "/")
+    except ValueError:
+        return str(p.resolve())
+
+
 def _write_jsonl(path: Path, rows: list[dict]) -> None:
     with path.open("w", encoding="utf-8") as f:
         for r in rows:
@@ -255,7 +264,7 @@ class Runner:
         run_meta = {
             "model": opts.model, "effort": opts.effort, "judge_model": opts.judge_model if self.judge else None,
             "cases": len(cases), "reps": opts.reps, "concurrency": opts.concurrency,
-            "started_at": datetime.now(UTC).isoformat(timespec="seconds"), "entrypoint": str(suite.entrypoint.relative_to(REPO_ROOT)),
+            "started_at": datetime.now(UTC).isoformat(timespec="seconds"), "entrypoint": _display_path(suite.entrypoint),
             "python": sys.version.split()[0],
         }
         print(f"[{suite.name}] {len(jobs)} attempt(s) ({len(cases)} cases x {opts.reps} reps) -> {out_dir}", file=sys.stderr)

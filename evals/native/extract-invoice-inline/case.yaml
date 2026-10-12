@@ -1,0 +1,47 @@
+schema_version: "1.1"
+name: extract-invoice-inline
+description: Skill triggers and extracts invoice fields inline, with evidence and missing list
+tags: [extract]
+runs: 2
+execution:
+  prompt: |
+    Here's an invoice we just received. Can you pull out invoice_number, invoice_date (ISO), vendor, total (number), currency and po_number as JSON?
+
+    INVOICE INV-40213
+    Cobalt Street Coffee Roasters
+    88 Mill Lane, Bristol BS1 6QH, United Kingdom
+
+    Invoice date: 14 September 2026
+    Order placed: 9 September 2026
+    Bill to: Kestrel Analytics UK Ltd, 18 Wellington Street, Leeds
+
+    12 x 1 kg single-origin espresso beans @ £21.50     £258.00
+     4 x 1 kg decaf house blend @ £19.00                 £76.00
+    Delivery                                              £9.50
+    Subtotal                                            £343.50
+    VAT 20%                                              £68.70
+    Total due                                           £412.20
+
+    Payment within 14 days of the invoice date, by bank transfer to sort code 30-94-57, account 11820473. Thank you for your custom!
+  max_turns: 8
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Skill]
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?extract"'
+  - name: invoice-number-present
+    type: regex
+    pattern: '"invoice_number"\s*:\s*"INV-[0-9]+"'
+    target: last_message
+  - name: missing-field-null
+    type: regex
+    # Scoped to the data object (or a flat answer with no evidence object): a bare
+    # key-null pattern would also match a null evidence quote next to an invented value.
+    pattern: '"data"\s*:\s*\{[^{}]*"po_number"\s*:\s*null|^(?![\s\S]*"evidence")[\s\S]*"po_number"\s*:\s*null'
+    target: last_message
+  - name: total-is-number
+    type: regex
+    pattern: '"total"\s*:\s*412\.20?\b'
+    target: last_message

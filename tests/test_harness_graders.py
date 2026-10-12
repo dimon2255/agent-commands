@@ -38,6 +38,13 @@ def test_json_schema_grader():
     assert ok.passed and not bad.passed and "schema error" in bad.evidence
 
 
+def test_json_schema_grader_enforces_formats():
+    schema = {"type": "object", "properties": {"d": {"type": "string", "format": "date"}}, "required": ["d"]}
+    ok = run_metric({"name": "s", "grader": "json_schema", "target": "$output", "schema": schema}, ctx({"d": "2026-03-03"}))
+    bad = run_metric({"name": "s", "grader": "json_schema", "target": "$output", "schema": schema}, ctx({"d": "March 3rd, 2026"}))
+    assert ok.passed and not bad.passed and "date" in bad.evidence
+
+
 def test_regex_and_contains_and_not_contains():
     out = {"text": "Decision: use Redis\nStatus: Accepted"}
     assert run_metric({"name": "r", "grader": "regex", "target": "$output.text", "pattern": "^status: accepted$", "flags": "im"}, ctx(out)).passed

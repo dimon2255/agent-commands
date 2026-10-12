@@ -114,7 +114,8 @@ def _g_json_schema(metric: dict, ctx: GradeContext) -> Grade:
 
     target = ctx.arg(metric, "target")
     schema = ctx.arg(metric, "schema")
-    validator = jsonschema.Draft202012Validator(schema)
+    # FormatChecker so `format: date` / `email` are enforced, not silently ignored.
+    validator = jsonschema.Draft202012Validator(schema, format_checker=jsonschema.FormatChecker())
     errors = sorted(validator.iter_errors(target), key=lambda e: list(e.path))
     if not errors:
         return Grade(1.0, True, "valid against schema")
