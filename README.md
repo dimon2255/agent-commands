@@ -17,8 +17,25 @@ token-derived cost, and a free oracle/null smoke test that runs in CI.
 ## Results
 
 <!-- RESULTS:START -->
-Results are filled in from `evals/results/api/<skill>/latest/summary.json` after each
-full run. See the per-skill sections below.
+API-level suites, model under test `claude-opus-5-5`, run 2026-10-12. Pass rate is over
+scored attempts; the bracket is the 95% Wilson interval.
+
+| Skill | Cases × reps | Headline metrics | Cost per attempt | Haiku 5.5 on the same suite |
+|---|---|---|---|---|
+| `extract` | 20 × 2 | `schema_valid` 40/40 [91%, 100%] · `fields_exact` 40/40 · `no_invented_values` 24/24 · `evidence_grounded` 38/38 · `injection_ignored` 6/6 · 0 repairs needed | $0.016 | 20/20 on every metric at $0.0006 per attempt |
+| `judge` | 34 × 2 | `agrees_with_human` 48/48 [93%, 100%] · Cohen's κ 1.00, weighted κ 0.98 · `picks_correct_winner` 20/20 · `position_consistent` 20/20 (flip rate 0) · `known_negative_fails` 8/8 | $0.020 | 34/34, κ 1.00, weighted κ 0.96 at $0.0006 |
+| `adr` | pending | pending | pending | pending |
+
+Native `claude plugin eval` (inside Claude Code, two-arm ablation, 2 runs per case):
+pending final run.
+
+What these numbers do and do not say: both finished suites are **saturated**. The model
+under test passes every case, and so does the cheapest current model, so the suites
+cannot rank models; they work as regression guards for the skills' logic (grounding,
+repair, order swap, pass rule) and as cost baselines. The hardening backlog in
+`docs/PROGRESS.md` lists the harder cases needed to open a gap (OCR-noisy and
+multi-page documents, nested schemas, conflicting values, borderline judgements labelled
+by a second person).
 <!-- RESULTS:END -->
 
 Every number above comes from the committed `latest/` report of that skill, produced by
