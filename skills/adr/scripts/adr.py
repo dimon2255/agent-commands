@@ -308,6 +308,8 @@ def check_paths(markdown: str, listed: list[str], pack_paths: list[str]) -> dict
         has_sep, has_ext = "/" in tok or raw.endswith(("/", "\\")), bool(_EXT_RE.search(tok))
         if not (has_sep or has_ext):
             continue
+        if has_ext and not re.search(r"[\w-]", tok.rsplit(".", 1)[0]):
+            continue  # a bare extension in prose ("the `.js` module mapper") is not a path claim
         hit = _resolve(tok, files, dirs)
         if hit is not None:
             bucket, value = referenced, hit

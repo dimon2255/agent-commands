@@ -23,6 +23,7 @@ class Grade:
     passed: bool
     evidence: str
     na: bool = False  # metric does not apply to this case (e.g. pairwise metric on a pointwise case)
+    error: bool = False  # the grader itself failed (judge outage, exception); never a model failure
     judge_usage: dict | None = None
     judge_model: str | None = None
     judge_latency_ms: int | None = None
@@ -34,6 +35,10 @@ class Grade:
     @classmethod
     def not_applicable(cls, evidence: str = "not applicable") -> Grade:
         return cls(0.0, False, evidence, na=True)
+
+    @classmethod
+    def grader_error(cls, evidence: str, **extra: Any) -> Grade:
+        return cls(0.0, False, evidence, error=True, **extra)
 
 
 @dataclass
@@ -140,12 +145,22 @@ def _g_paths_subset(metric: dict, ctx: GradeContext) -> Grade:
 
 def _g_llm_rubric(metric: dict, ctx: GradeContext) -> Grade:
     if ctx.judge is None:
-        raise RuntimeError("llm_rubric grader needs a judge (run with API access)")
+        # No judge configured (--no-judge, or a smoke run): the metric is not evaluated,
+        # which is different from the candidate failing it.
+        return Grade.not_applicable("no judge configured")
     rubric = ctx.arg(metric, "rubric")
     target = ctx.arg(metric, "target")
     context = ctx.arg(metric, "context", "") or ""
     candidate = target if isinstance(target, str) else _dump(target)
-    res = ctx.judge.grade(str(rubric), candidate, str(context))
+    from .llm import JudgeError
+
+    try:
+        res = ctx.judge.grade(str(rubric), candidate, str(context))
+    except JudgeError as exc:
+        # The judge refused or was cut off: a grader failure with its own cost, not a model failure.
+        return Grade.grader_error(
+            f"JUDGE ERROR {exc}", judge_usage=exc.usage, judge_model=exc.served_model, judge_latency_ms=exc.latency_ms
+        )
     return Grade(
         score=(res.score - 1) / 4.0,
         passed=res.passed,
@@ -211,4 +226,6 @@ def run_metric(metric: dict, ctx: GradeContext) -> Grade:
     try:
         return fn(metric, ctx)
     except Exception as exc:  # noqa: BLE001 - grader failures are reported, not raised
-        return Grade(0.0, False, f"GRADER ERROR {type(exc).__name__}: {str(exc)[:200]}")
+        # A grader that crashes is excluded from the pass rate and fails the gate as an
+        # infrastructure problem; it must never be averaged in as a model failure.
+        return Grade.grader_error(f"GRADER ERROR {type(exc).__name__}: {str(exc)[:200]}")

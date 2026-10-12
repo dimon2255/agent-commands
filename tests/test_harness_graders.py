@@ -76,6 +76,30 @@ def test_unknown_grader_raises():
         run_metric({"name": "x", "grader": "nope"}, ctx({}))
 
 
-def test_llm_rubric_without_judge_is_failed_grade():
+def test_llm_rubric_without_judge_is_not_applicable_not_a_failure():
     g = run_metric({"name": "j", "grader": "llm_rubric", "rubric": "r", "target": "$output"}, ctx({"x": 1}))
-    assert not g.passed and "GRADER ERROR" in g.evidence
+    assert g.na and not g.error and "no judge" in g.evidence
+
+
+def test_judge_failure_is_a_grader_error_with_its_cost():
+    from evals.harness.llm import JudgeError
+
+    class BrokenJudge:
+        def grade(self, rubric, candidate, context=""):
+            raise JudgeError("judge stopped with refusal", usage={"input_tokens": 10, "output_tokens": 0}, served_model="claude-opus-5-5")
+
+    c = GradeContext(case={"input": {}, "expected": {}}, output={"x": 1}, meta={}, judge=BrokenJudge())
+    g = run_metric({"name": "j", "grader": "llm_rubric", "rubric": "r", "target": "$output"}, c)
+    assert g.error and not g.na and not g.passed
+    assert g.judge_usage == {"input_tokens": 10, "output_tokens": 0} and g.judge_model == "claude-opus-5-5"
+
+
+def test_crashing_grader_is_an_error_not_a_failure():
+    class Mod:
+        @staticmethod
+        def boom(case, output, meta):
+            raise ValueError("bad")
+
+    c = GradeContext(case={"input": {}, "expected": {}}, output={}, meta={}, custom_module=Mod)
+    g = run_metric({"name": "p", "grader": "python", "function": "boom"}, c)
+    assert g.error and "GRADER ERROR ValueError" in g.evidence

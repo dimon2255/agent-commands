@@ -45,6 +45,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--resume", default=None, help="existing run directory to continue")
     p.add_argument("--no-latest", action="store_true", help="do not copy this run into results/api/<skill>/latest (comparison runs)")
     p.add_argument("--smoke", action="store_true", help="oracle + null baseline through graders; no API calls")
+    p.add_argument("--regrade", default=None, help="re-score a saved run directory after a grader change; no model calls")
     p.add_argument("--list", action="store_true", help="list suites and cases, then exit")
     args = p.parse_args(argv)
 
@@ -70,6 +71,18 @@ def main(argv: list[str] | None = None) -> int:
             ok = ok and res["ok"]
             print(json.dumps(res, indent=2))
         return 0 if ok else 1
+
+    if args.regrade:
+        if len(suites) != 1:
+            p.error("--regrade takes exactly one --skill")
+        from evals.harness.regrade import regrade
+
+        run_dir, summary = regrade(suites[0], Path(args.regrade), update_latest=not args.no_latest)
+        print(f"[{suites[0].name}] regraded {run_dir}: {summary['run'].get('regrade_note')} -> gate {'PASS' if summary['gate_passed'] else 'FAIL'}")
+        for name, m in summary["metrics"].items():
+            rate = "n/a" if m["pass_rate"] is None else f"{100 * m['pass_rate']:.1f}%"
+            print(f"   {name:<28} {rate:>7}  n={m['n']}")
+        return 0 if summary["gate_passed"] else 1
 
     judge = None
     if not args.no_judge and any(m["grader"] == "llm_rubric" for s in suites for m in s.metrics):

@@ -58,15 +58,28 @@ class RunOptions:
     extra_env: dict[str, str] = field(default_factory=dict)
 
 
+def validate_config(config: dict) -> list[str]:
+    """Return config problems; a misspelt threshold must fail loudly, not silently disable a gate."""
+    problems = [f"missing {key!r}" for key in ("skill", "entrypoint", "cases", "metrics") if key not in config]
+    if problems:
+        return problems
+    names = [m.get("name") for m in config["metrics"]]
+    if len(set(names)) != len(names):
+        problems.append("duplicate metric names")
+    for name in (config.get("thresholds") or {}):
+        if name not in names:
+            problems.append(f"threshold names unknown metric {name!r}")
+    return problems
+
+
 def load_suite(skill_dir: Path) -> SkillSuite:
     skill_dir = Path(skill_dir).resolve()
     cfg_path = skill_dir / "evals" / "config.yaml"
     if not cfg_path.exists():
         raise FileNotFoundError(f"{skill_dir.name}: no evals/config.yaml")
     config = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
-    for key in ("skill", "entrypoint", "cases", "metrics"):
-        if key not in config:
-            raise ValueError(f"{cfg_path}: missing {key!r}")
+    for problem in validate_config(config):
+        raise ValueError(f"{cfg_path}: {problem}")
     cases_path = skill_dir / config["cases"]
     cases: list[dict] = []
     seen: set[str] = set()
@@ -192,7 +205,11 @@ def _run_script(suite: SkillSuite, case: dict, rep: int, opts: RunOptions, workd
     if meta["status"] == "error":
         return "error", {**base, "failure_class": "api_error", "message": json.dumps(env_obj.get("error"))[:800]}
     served = meta.get("served_model")
-    if served and served != opts.model and not served.startswith(opts.model) and not opts.allow_model_mismatch:
+    if not served:
+        return "error", {**base, "failure_class": "served_model_missing", "message": "envelope has no meta.served_model"}
+    if served != opts.model and not opts.allow_model_mismatch:
+        # Exact match: current model IDs carry no date suffix, and a prefix match would let
+        # claude-opus-5 be served (and priced) as claude-opus-5-5.
         return "error", {**base, "failure_class": "served_model_mismatch", "message": f"asked {opts.model}, served {served}"}
     row = {
         **base,
@@ -262,6 +279,10 @@ class Runner:
         errors = _read_jsonl(out_dir / "errors.jsonl") if opts.resume else []
         done = {(r["case_id"], r["rep"]) for r in rows}
         jobs = [(c, rep) for c in cases for rep in range(1, opts.reps + 1) if (c["id"], rep) not in done]
+        # An attempt that errored last time is retried now, so its old error row must go;
+        # error rows for attempts outside this run's selection are kept.
+        retrying = {(c["id"], rep) for c, rep in jobs}
+        errors = [e for e in errors if (e["case_id"], e["rep"]) not in retrying]
         run_meta = {
             "model": opts.model, "effort": opts.effort, "judge_model": opts.judge_model if self.judge else None,
             "cases": len(cases), "reps": opts.reps, "concurrency": opts.concurrency,

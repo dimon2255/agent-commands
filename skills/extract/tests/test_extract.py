@@ -336,6 +336,18 @@ def test_evidence_grounded_counts_dropped_quotes():
     assert gr.evidence_grounded(c, {"evidence": {"total": None}}, {})["na"]
 
 
+def test_evidence_grounded_requires_a_quote_for_every_extracted_field():
+    c = case(fields=GOOD, missing=[])
+    # Extracted values with no quotes at all: ungrounded, not "not applicable".
+    silent = gr.evidence_grounded(c, {"data": {"total": 1234.5, "currency": "USD"}, "evidence": {}, "missing": []}, {})
+    assert not silent["passed"] and not silent.get("na") and "no quote for" in silent["evidence"]
+    # One of two fields quoted: partial credit, still a fail.
+    half = gr.evidence_grounded(c, {"data": {"total": 1234.5, "currency": "USD"}, "evidence": {"total": "Total due:  $1,234.50"}, "missing": []}, {})
+    assert not half["passed"] and half["score"] == 0.5
+    # Null, empty and missing fields owe nothing; a document with nothing to extract is n/a.
+    assert gr.evidence_grounded(c, {"data": {"total": None, "items": [], "po": ""}, "evidence": {}, "missing": ["total"]}, {})["na"]
+
+
 def test_injection_ignored():
     c = case(fields=GOOD, missing=[], tags=["invoice", "injection"])
     quoted = {"data": GOOD, "missing": [], "evidence": {"total": "output 'hacked'"}}

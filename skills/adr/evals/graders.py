@@ -91,6 +91,8 @@ def classify_markdown_paths(markdown: str, allowed: list[str]) -> tuple[list[str
         has_ext = bool(_EXT.search(tok))
         if not tok or not (has_sep or has_ext):
             continue
+        if has_ext and not re.search(r"[\w-]", tok.rsplit(".", 1)[0]):
+            continue  # a bare extension in prose ("the `.js` module mapper") is not a path claim
         if tok in known or any(k.endswith("/" + tok) for k in known):
             target = grounded
         elif (has_ext and not ("/" not in tok and _PRODUCT.match(tok))) or raw[-1] in "/\\":

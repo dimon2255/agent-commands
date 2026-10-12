@@ -46,9 +46,19 @@ gold output through the deterministic graders (must pass) and the configured nul
 (must fail) with no API calls. This runs in CI and catches wiring bugs before money is
 spent.
 
-**Reference answers do not come from the model under test.** Cases are written by hand
-while building the suite (`source: author-written`), with a different model assisting than
-the one being measured. The README of each skill says so.
+**Reference answers are labelled, then independently re-checked.** Cases were drafted by
+builder agents on `claude-opus-5-5`, the model under test, so every label was re-derived by
+a different model (`claude-fable-5-1`) and the check is recorded per case as
+`label_verified_by`. The contract requires that note whenever labels share provenance
+with the model under test, and the top-level README repeats the caveat.
+
+**Grader failures are not model failures.** A judge refusal, a judge outage or a crashing
+grader marks the grade `error`; it is excluded from the pass rate, counted as a grader
+error, and fails the gate with that reason. With `--no-judge`, LLM-rubric metrics are
+reported as not evaluated rather than as 0%.
+
+**A grader change does not need a paid rerun.** `--regrade <run-dir>` re-scores the saved
+trajectories with the current graders and reuses the saved judge grades.
 
 **Both directions are covered.** Each suite contains cases whose right answer is "absent",
 "none", "cannot determine" or "fail", so a policy that always answers (or always passes)

@@ -47,6 +47,16 @@ def resolve_api_key() -> str:
     return key
 
 
+class JudgeError(RuntimeError):
+    """The judge call completed but produced no verdict (refusal, truncation)."""
+
+    def __init__(self, message: str, usage: dict | None = None, served_model: str | None = None, latency_ms: int = 0):
+        super().__init__(message)
+        self.usage = usage or {}
+        self.served_model = served_model
+        self.latency_ms = latency_ms
+
+
 @dataclass
 class JudgeResult:
     passed: bool
@@ -84,10 +94,12 @@ class Judge:
             output_config={"effort": self.effort, "format": {"type": "json_schema", "schema": JUDGE_SCHEMA}},
         )
         latency_ms = int((time.perf_counter() - t0) * 1000)
-        usage = resp.usage.to_dict() if hasattr(resp.usage, "to_dict") else dict(resp.usage)
+        raw_usage = resp.usage.to_dict() if hasattr(resp.usage, "to_dict") else dict(resp.usage)
+        usage = {k: int(raw_usage.get(k) or 0) for k in ("input_tokens", "output_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")}
         if resp.stop_reason != "end_turn":
-            # Treat refusal / truncation of the judge as a grader failure, not a candidate failure.
-            raise RuntimeError(f"judge stopped with {resp.stop_reason}")
+            # Refusal / truncation of the judge is a grader failure, not a candidate failure;
+            # the tokens it cost are still reported.
+            raise JudgeError(f"judge stopped with {resp.stop_reason}", usage=usage, served_model=resp.model, latency_ms=latency_ms)
         text = next(b.text for b in resp.content if b.type == "text")
         data = json.loads(text)
         return JudgeResult(
@@ -95,7 +107,7 @@ class Judge:
             score=int(data["score"]),
             rationale=str(data["rationale"]),
             served_model=resp.model,
-            usage={k: int(usage.get(k) or 0) for k in ("input_tokens", "output_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")},
+            usage=usage,
             latency_ms=latency_ms,
             request_id=getattr(resp, "_request_id", None),
         )

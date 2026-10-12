@@ -61,3 +61,4 @@ thresholds:
   paths_grounded: 0.90
   number_correct: 0.95
   no_placeholders: 1.0
+  decision_fits_context: 0.80   # the only metric that judges the decision itself; judge outages are grader errors, not failures

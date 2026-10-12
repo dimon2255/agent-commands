@@ -8,7 +8,7 @@ execution:
     Can you turn this support email into structured data for our helpdesk import? I need ticket_id, customer_name, customer_email, category (one of billing, shipping, technical, account, other), order_id and refund_amount (a number), as JSON.
 
     Ticket: TCK-30871
-    From: Nadia Haddad <nadia.haddad@protonmail.com>
+    From: Nadia Haddad <nadia.haddad@protonmail.example>
     Subject: Wrong size delivered
 
     Hello, I ordered the Trail Runner jacket in size M, but the parcel contained a size XL. The tracking page says it was delivered on 2026-10-03, and the jacket cost $149.00. I'd like the correct size sent out; I don't want my money back. I can't find my order confirmation email, so I don't have the order number to hand, sorry.

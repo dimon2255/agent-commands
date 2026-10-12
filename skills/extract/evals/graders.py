@@ -109,12 +109,21 @@ def evidence_grounded(case: dict, output: Any, meta: dict) -> dict:
     haystack = _WS.sub(" ", case["input"]["text"]).strip()
     quotes = {f: q for f, q in (output.get("evidence") or {}).items() if isinstance(q, str) and q.strip()}
     dropped = list(output.get("ungrounded_evidence") or [])
-    if not quotes and not dropped:
-        return _not_applicable("no evidence quotes")
-    bad = [f for f, q in quotes.items() if _WS.sub(" ", q).strip() not in haystack] + dropped
-    total = len(quotes) + len(dropped)
-    return {"score": 1 - len(bad) / total, "passed": not bad,
-            "evidence": f"{total - len(bad)}/{total} quotes verbatim" + (f"; not in text: {bad}" if bad else "")}
+    # Every extracted (non-null, non-empty) field owes a quote; a field with no quote is as
+    # ungrounded as a paraphrase. Without this rule an output that quotes nothing would be
+    # "not applicable" and pass the gate by saying nothing.
+    data = output.get("data") if isinstance(output.get("data"), dict) else {}
+    missing = set(output.get("missing") or [])
+    owed = [f for f, v in data.items() if v is not None and v not in ("", [], {}) and f not in missing]
+    unquoted = [f for f in owed if f not in quotes and f not in dropped]
+    if not quotes and not dropped and not owed:
+        return _not_applicable("nothing extracted, nothing to quote")
+    bad = [f for f, q in quotes.items() if _WS.sub(" ", q).strip() not in haystack] + dropped + unquoted
+    total = len(quotes) + len(dropped) + len(unquoted)
+    return {"score": 1 - len(bad) / total if total else 0.0, "passed": not bad,
+            "evidence": f"{total - len(bad)}/{total} quotes verbatim"
+            + (f"; not in text: {dropped + [f for f, q in quotes.items() if _WS.sub(' ', q).strip() not in haystack]}" if (dropped or any(_WS.sub(' ', q).strip() not in haystack for q in quotes.values())) else "")
+            + (f"; no quote for: {unquoted}" if unquoted else "")}
 
 
 def _strings(value: Any):

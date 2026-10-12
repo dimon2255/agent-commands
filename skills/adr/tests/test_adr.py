@@ -147,6 +147,8 @@ PACK = ["src/cache.py", "src/catalog.py", "config/settings.toml", "docs/architec
         # Paths inside URLs and package scopes are skipped by both implementations alike.
         ("`http://localhost:8080/openapi.yaml` and `@acme/eslint-config/index.js`", [], []),
         ("New files `infra/prod.tfvars` and `vitest.config.mts`.", [], ["infra/prod.tfvars", "vitest.config.mts"]),
+        # A bare extension in prose is not a path claim (seen live: "the `.js` module mapper").
+        ("Replace the `.js` module mapper and the `.ts` transform; keep `src/cache.py`.", ["src/cache.py"], []),
     ],
 )
 def test_check_paths_and_grader_agree(markdown, referenced, unknown):

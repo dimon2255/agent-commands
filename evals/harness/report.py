@@ -11,7 +11,13 @@ from .stats import mean_std, percentile, wilson_interval
 
 def _applicable(row: dict, name: str) -> bool:
     g = row["grades"].get(name)
-    return g is not None and not g.get("na")
+    return g is not None and not g.get("na") and not g.get("error")
+
+
+def _grader_errors(rows: list[dict], name: str | None = None) -> int:
+    return sum(
+        1 for r in rows for n, g in r["grades"].items() if (name is None or n == name) and g.get("error")
+    )
 
 
 def summarize(
@@ -37,6 +43,7 @@ def summarize(
             "ci95": [round(low, 4), round(high, 4)],
             "mean_score": round(m, 4),
             "std_score": round(sd, 4),
+            "grader_errors": _grader_errors(scored, name),
         }
 
     # Per-tag (tags[0]) breakdown so skew is visible.
@@ -56,6 +63,7 @@ def summarize(
     served_models = sorted({r.get("served_model") for r in rows if r.get("served_model")})
 
     thresholds = suite_cfg.get("thresholds", {}) or {}
+    grader_error_count = _grader_errors(rows)
     gates = {}
     for name, floor in thresholds.items():
         m = metrics.get(name, {})
@@ -72,6 +80,8 @@ def summarize(
         gate_reasons.append("no scored attempts")
     if infra_error_count:
         gate_reasons.append(f"{infra_error_count} infrastructure error(s): run is incomplete")
+    if grader_error_count:
+        gate_reasons.append(f"{grader_error_count} grader error(s): some attempts are unscored")
     gate_reasons += [f"{n} below threshold" for n, g in gates.items() if g["passed"] is False]
     gates_skipped = [n for n, g in gates.items() if g["passed"] is None]
     gate_passed = not gate_reasons
@@ -92,6 +102,7 @@ def summarize(
             "truncated": len(truncated),
             "refusals": len(refusals),
             "infra_errors": infra_error_count,
+            "grader_errors": grader_error_count,
             "error_classes": dict(error_classes),
         },
         "refusal_rate": (len(refusals) / len(rows)) if rows else None,
@@ -137,9 +148,9 @@ def render_markdown(summary: dict, rows: list[dict], errors: list[dict]) -> str:
         gate_line += f" · not evaluated (no applicable rows): {', '.join(f'`{n}`' for n in s['gates_skipped'])}"
     out.append(gate_line + "\n")
     out.append("## Counts\n")
-    out.append("| cases | reps | attempts | scored | truncated | refusals | infra errors |")
-    out.append("|---:|---:|---:|---:|---:|---:|---:|")
-    out.append(f"| {c['cases']} | {c['reps']} | {c['attempts']} | {c['scored']} | {c['truncated']} | {c['refusals']} | {c['infra_errors']} |\n")
+    out.append("| cases | reps | attempts | scored | truncated | refusals | infra errors | grader errors |")
+    out.append("|---:|---:|---:|---:|---:|---:|---:|---:|")
+    out.append(f"| {c['cases']} | {c['reps']} | {c['attempts']} | {c['scored']} | {c['truncated']} | {c['refusals']} | {c['infra_errors']} | {c.get('grader_errors', 0)} |\n")
     if c["error_classes"]:
         out.append("Infrastructure errors by class (not scored as model failures): " + ", ".join(f"`{k}`={v}" for k, v in c["error_classes"].items()) + "\n")
     out.append("## Metrics (scored attempts only)\n")
@@ -187,7 +198,7 @@ def render_markdown(summary: dict, rows: list[dict], errors: list[dict]) -> str:
         cells = []
         for n in names:
             g = r["grades"].get(n)
-            cells.append("—" if g is None else ("n/a" if g.get("na") else ("✅" if g["passed"] else "❌")))
+            cells.append("—" if g is None else ("n/a" if g.get("na") else ("⚠ grader" if g.get("error") else ("✅" if g["passed"] else "❌"))))
         cost_s = f"{r['cost_usd']:.4f}" if r.get("cost_usd") is not None else "n/a"
         out.append(f"| {r['case_id']} | {r['rep']} | {r['status']} | " + " | ".join(cells) + f" | {cost_s} | {r.get('latency_ms', 0)} |")
     out.append("")
@@ -197,6 +208,12 @@ def render_markdown(summary: dict, rows: list[dict], errors: list[dict]) -> str:
         for r, n in failed[:60]:
             ev = str(r["grades"][n]["evidence"]).replace("\n", " ")[:300]
             out.append(f"- `{r['case_id']}` r{r['rep']} `{n}`: {ev}")
+        out.append("")
+    grader_errs = [(r, n) for r in rows for n, g in r["grades"].items() if g.get("error")]
+    if grader_errs:
+        out.append("## Grader errors (unscored, not model failures)\n")
+        for r, n in grader_errs[:40]:
+            out.append(f"- `{r['case_id']}` r{r['rep']} `{n}`: {str(r['grades'][n]['evidence'])[:200]}")
         out.append("")
     if errors:
         out.append("## Infrastructure errors\n")

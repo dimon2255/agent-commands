@@ -24,10 +24,12 @@ scored attempts; the bracket is the 95% Wilson interval.
 |---|---|---|---|---|
 | `extract` | 20 × 2 | `schema_valid` 40/40 [91%, 100%] · `fields_exact` 40/40 · `no_invented_values` 24/24 · `evidence_grounded` 38/38 · `injection_ignored` 6/6 · 0 repairs needed | $0.016 | 20/20 on every metric at $0.0006 per attempt |
 | `judge` | 34 × 2 | `agrees_with_human` 48/48 [93%, 100%] · Cohen's κ 1.00, weighted κ 0.98 · `picks_correct_winner` 20/20 · `position_consistent` 20/20 (flip rate 0) · `known_negative_fails` 8/8 | $0.020 | 34/34, κ 1.00, weighted κ 0.96 at $0.0006 |
-| `adr` | pending | pending | pending | pending |
+| `adr` | 10 × 2 | `sections_present`, `two_plus_alternatives`, `negative_consequence_present`, `number_correct`, `no_placeholders` 20/20 [84%, 100%] · `paths_grounded` 20/20 (0 hallucinated paths) · `constraints_named` 12/12 · `decision_fits_context` (LLM rubric) 19/20 [76%, 99%] | $0.100 + $0.015 judge | 9/9 scored attempts pass everything including the judge; 1 attempt truncated at the output cap (reported, not scored); $0.006 |
 
 Native `claude plugin eval` (inside Claude Code, two-arm ablation, 2 runs per case):
+<!-- NATIVE:START -->
 pending final run.
+<!-- NATIVE:END -->
 
 What these numbers do and do not say: both finished suites are **saturated**. The model
 under test passes every case, and so does the cheapest current model, so the suites
@@ -160,14 +162,19 @@ in [`evals/CONTRACT.md`](evals/CONTRACT.md).
 
 Honesty notes, because an eval is only as good as what it admits:
 
-- Case sets and labels were written by the repository author while building the suites,
-  with AI assistance from a different model than the one under test (`source:
-  author-written` on every case). They are not an external benchmark.
+- Case sets and labels were drafted while building the suites by builder agents running
+  on `claude-opus-5-5`, which is also the model under test. Every label was then
+  independently re-derived by a different model (`claude-fable-5-1`) and the result is
+  recorded on each case as `label_verified_by` (`source: author-written`). Two gold values
+  and one over-strict rubric were corrected in that pass. This is not an external
+  benchmark, and the judge suite's perfect agreement with its labels may be inflated by
+  shared provenance; a second human labeller for the borderline items is the next step.
 - The default judge model is the same family as the model under test. That is a known
   self-preference risk; `--judge-model` changes it and the reports record which judge ran.
-- With 10–34 cases per suite and one repetition, the intervals are wide (roughly ±15–25
-  points). The suites detect gross regressions and grader bugs; they do not resolve
-  single-digit differences. `--reps` narrows them at proportional cost.
+- With 10–34 cases per suite at two repetitions, the intervals are still wide (lower
+  bounds of roughly 85–93% on a perfect score). The suites detect gross regressions and
+  grader bugs; they do not resolve single-digit differences. `--reps` narrows them at
+  proportional cost.
 - Native Windows cannot sandbox shell tools for `claude plugin eval`, so the native cases
   grant only read-only tools plus `Skill` and `Write`, and each `SKILL.md` documents an
   inline path that needs no script.

@@ -1,0 +1,271 @@
+{
+  "skill": "adr",
+  "generated_at": "2026-10-12T17:36:58+00:00",
+  "run": {
+    "model": "claude-opus-5-5",
+    "effort": null,
+    "judge_model": "claude-opus-5-5",
+    "cases": 10,
+    "reps": 2,
+    "concurrency": 4,
+    "started_at": "2026-10-12T17:21:10+00:00",
+    "entrypoint": "skills/adr/scripts/adr.py",
+    "python": "3.13.12",
+    "finished_at": "2026-10-12T17:23:39+00:00",
+    "regraded_at": "2026-10-12T17:36:58+00:00",
+    "regrade_note": "1 grade(s) changed; llm_rubric grades reused from the original run"
+  },
+  "counts": {
+    "cases": 10,
+    "reps": 2,
+    "attempts": 20,
+    "scored": 20,
+    "truncated": 0,
+    "refusals": 0,
+    "infra_errors": 0,
+    "grader_errors": 0,
+    "error_classes": {}
+  },
+  "refusal_rate": 0.0,
+  "metrics": {
+    "sections_present": {
+      "n": 20,
+      "passed": 20,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.8389,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0,
+      "grader_errors": 0
+    },
+    "two_plus_alternatives": {
+      "n": 20,
+      "passed": 20,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.8389,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0,
+      "grader_errors": 0
+    },
+    "negative_consequence_present": {
+      "n": 20,
+      "passed": 20,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.8389,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0,
+      "grader_errors": 0
+    },
+    "paths_grounded": {
+      "n": 20,
+      "passed": 20,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.8389,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0,
+      "grader_errors": 0
+    },
+    "forbidden_path_absent": {
+      "n": 4,
+      "passed": 4,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.5101,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0,
+      "grader_errors": 0
+    },
+    "number_correct": {
+      "n": 20,
+      "passed": 20,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.8389,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0,
+      "grader_errors": 0
+    },
+    "no_placeholders": {
+      "n": 20,
+      "passed": 20,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.8389,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0,
+      "grader_errors": 0
+    },
+    "constraints_named": {
+      "n": 12,
+      "passed": 12,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.7575,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0,
+      "grader_errors": 0
+    },
+    "decision_fits_context": {
+      "n": 20,
+      "passed": 19,
+      "pass_rate": 0.95,
+      "ci95": [
+        0.7639,
+        0.9911
+      ],
+      "mean_score": 0.9375,
+      "std_score": 0.1791,
+      "grader_errors": 0
+    }
+  },
+  "suite_metrics": {
+    "unknown_paths_total": 0,
+    "attempts_with_unknown_paths": "0/20",
+    "mean_alternatives": 3.25,
+    "mean_words": 743,
+    "attempts_over_700_words": "17/20"
+  },
+  "by_tag": {
+    "api": {
+      "n": 4,
+      "sections_present": 1.0,
+      "two_plus_alternatives": 1.0,
+      "negative_consequence_present": 1.0,
+      "paths_grounded": 1.0,
+      "forbidden_path_absent": 1.0,
+      "number_correct": 1.0,
+      "no_placeholders": 1.0,
+      "constraints_named": 1.0,
+      "decision_fits_context": 1.0
+    },
+    "messaging": {
+      "n": 4,
+      "sections_present": 1.0,
+      "two_plus_alternatives": 1.0,
+      "negative_consequence_present": 1.0,
+      "paths_grounded": 1.0,
+      "forbidden_path_absent": null,
+      "number_correct": 1.0,
+      "no_placeholders": 1.0,
+      "constraints_named": 1.0,
+      "decision_fits_context": 1.0
+    },
+    "storage": {
+      "n": 6,
+      "sections_present": 1.0,
+      "two_plus_alternatives": 1.0,
+      "negative_consequence_present": 1.0,
+      "paths_grounded": 1.0,
+      "forbidden_path_absent": null,
+      "number_correct": 1.0,
+      "no_placeholders": 1.0,
+      "constraints_named": 1.0,
+      "decision_fits_context": 1.0
+    },
+    "tooling": {
+      "n": 4,
+      "sections_present": 1.0,
+      "two_plus_alternatives": 1.0,
+      "negative_consequence_present": 1.0,
+      "paths_grounded": 1.0,
+      "forbidden_path_absent": null,
+      "number_correct": 1.0,
+      "no_placeholders": 1.0,
+      "constraints_named": 1.0,
+      "decision_fits_context": 1.0
+    },
+    "tricky": {
+      "n": 2,
+      "sections_present": 1.0,
+      "two_plus_alternatives": 1.0,
+      "negative_consequence_present": 1.0,
+      "paths_grounded": 1.0,
+      "forbidden_path_absent": 1.0,
+      "number_correct": 1.0,
+      "no_placeholders": 1.0,
+      "constraints_named": 1.0,
+      "decision_fits_context": 0.5
+    }
+  },
+  "cost": {
+    "skill_usd": 1.9952,
+    "judge_usd": 0.3009,
+    "per_attempt_usd": 0.0998,
+    "note": "derived from API-reported tokens and the served model's list price; see harness/pricing.py"
+  },
+  "latency_ms": {
+    "p50": 38019.0,
+    "p95": 64448.0,
+    "mean": 41127.5,
+    "note": "model-call time only; subprocess start-up, grading and retries excluded"
+  },
+  "served_models": [
+    "claude-opus-5-5"
+  ],
+  "gates": {
+    "sections_present": {
+      "threshold": 0.95,
+      "pass_rate": 1.0,
+      "n": 20,
+      "passed": true
+    },
+    "two_plus_alternatives": {
+      "threshold": 0.9,
+      "pass_rate": 1.0,
+      "n": 20,
+      "passed": true
+    },
+    "negative_consequence_present": {
+      "threshold": 0.9,
+      "pass_rate": 1.0,
+      "n": 20,
+      "passed": true
+    },
+    "paths_grounded": {
+      "threshold": 0.9,
+      "pass_rate": 1.0,
+      "n": 20,
+      "passed": true
+    },
+    "number_correct": {
+      "threshold": 0.95,
+      "pass_rate": 1.0,
+      "n": 20,
+      "passed": true
+    },
+    "no_placeholders": {
+      "threshold": 1.0,
+      "pass_rate": 1.0,
+      "n": 20,
+      "passed": true
+    },
+    "decision_fits_context": {
+      "threshold": 0.8,
+      "pass_rate": 0.95,
+      "n": 20,
+      "passed": true
+    }
+  },
+  "gates_skipped": [],
+  "gate_reasons": [],
+  "gate_passed": true
+}
