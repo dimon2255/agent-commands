@@ -5,8 +5,7 @@ focus: { source: file, path: "docs/decisions/002-session-state-store.md" }
 ---
 The candidate is a decision record written about a small repository whose only files are:
 README.md, config/app.yaml, src/app.py, src/session.py, docs/adr/001-postgres-primary-datastore.md.
-Paths may appear relative to that repository root (for example `src/session.py`) or with a
-`fixture/` prefix; both count as the same file.
+Paths appear relative to that repository root (for example `src/session.py`).
 
 PASS if the record cites at least one of those files by path, moves session state out of
 process memory into a store shared by all replicas, lists two or more alternatives with a

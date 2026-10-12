@@ -5,10 +5,10 @@ focus: { source: file, path: "docs/adr/002-nightly-invoice-export.md" }
 ---
 The candidate is a decision record written about a small repository whose only files are:
 README.md, config/app.yaml, src/invoicing/export.py, src/invoicing/db.py,
-docs/adr/001-postgres-system-of-record.md. Paths may appear relative to that repository root
-(for example `src/invoicing/export.py`) or with a `fixture/` prefix; both count as the same file.
-The README states a policy: no new infrastructure this quarter; only the existing Postgres
-database and the existing application containers may be used.
+docs/adr/001-postgres-system-of-record.md. Paths appear relative to that repository root
+(for example `src/invoicing/export.py`). The README states a policy: no new infrastructure
+this quarter; only the existing Postgres database and the existing application containers
+may be used.
 
 PASS if all of these hold: the record does not choose Celery, Redis or any other new service,
 and rejects Celery with Redis because of the no-new-infrastructure policy; the chosen approach

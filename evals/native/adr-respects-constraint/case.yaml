@@ -3,20 +3,148 @@ name: adr-respects-constraint
 description: >-
   Skill triggers on an explicit ADR request, honours the repository's
   no-new-infrastructure policy when a teammate suggests Celery with Redis, and writes
-  docs/adr/002-nightly-invoice-export.md in the workspace.
+  docs/adr/002-nightly-invoice-export.md in the workspace. The small repository is pasted
+  into the prompt because the eval workspace is empty.
 tags: [adr]
 runs: 2
 execution:
   prompt: |
     Write an ADR on how we should run the nightly invoice export as a scheduled background job.
-    Someone on the team suggested Celery with Redis. The code is in the read-only `fixture`
-    directory you have access to. Save the ADR as docs/adr/002-nightly-invoice-export.md in the
-    current working directory (create the folders if needed).
+    Someone on the team suggested Celery with Redis. Save the ADR as
+    docs/adr/002-nightly-invoice-export.md in the current working directory (create the folders
+    if needed). The relevant files from the repository are pasted below with their paths
+    relative to the repository root; cite only these files.
+
+    <file path="README.md">
+    # invoicing-service
+
+    Creates customer invoices and sends the nightly invoice export to the external accountant.
+
+    ## Runtime
+
+    - Two replicas of the API container on the shared Kubernetes cluster (config/app.yaml).
+    - Postgres 16 is the system of record (ADR 001).
+
+    ## Infrastructure policy (2026-Q4)
+
+    No new infrastructure this quarter. Only the existing Postgres 16 database and the existing
+    application containers may be used: no Redis, no message brokers, no new managed services.
+    Requests for new services reopen in January 2027.
+
+    ## Nightly invoice export
+
+    The export (src/invoicing/export.py) must run once per night after 01:00 UTC. Today the
+    on-call engineer starts it by hand in one of the API containers. It was missed on 9 of the
+    last 30 nights, and the accountant chased the missing files each time.
+    </file>
+
+    <file path="config/app.yaml">
+    service: invoicing-service
+    platform: kubernetes          # shared cluster run by the platform team
+    replicas: 2
+    command: ["uvicorn", "invoicing.app:app", "--host", "0.0.0.0", "--port", "8080"]
+
+    resources:
+      cpu: "1"
+      memory: 1Gi
+
+    database:
+      engine: postgres
+      version: "16"
+      host: invoicing-db.internal
+      pool_size_per_replica: 10
+
+    sftp:
+      host: sftp.accountant.example
+      user_env: ACCOUNTANT_SFTP_USER
+      key_env: ACCOUNTANT_SFTP_KEY
+    </file>
+
+    <file path="src/invoicing/export.py">
+    """Nightly invoice export to the external accountant.
+
+    Builds one CSV of the previous day's invoices and uploads it over SFTP. A full
+    day takes about 25 minutes. Running it twice for the same day uploads two files,
+    and the accountant's system imports both, so every invoice is booked twice.
+    """
+
+    import csv
+    import io
+    from datetime import date, timedelta
+
+    from invoicing.db import connect
+    from invoicing.sftp import upload
+
+
+    def export_invoices_for_day(day: date) -> int:
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(["invoice_id", "customer_id", "issued_on", "total_minor", "currency"])
+        count = 0
+        with connect() as conn:
+            rows = conn.execute(
+                "SELECT id, customer_id, issued_on, total_minor, currency "
+                "FROM invoices WHERE issued_on = %s ORDER BY id",
+                (day,),
+            )
+            for row in rows:
+                writer.writerow(row)
+                count += 1
+        upload(f"invoices-{day.isoformat()}.csv", buffer.getvalue().encode())
+        return count
+
+
+    if __name__ == "__main__":
+        # Run by hand today: python -m invoicing.export
+        print(export_invoices_for_day(date.today() - timedelta(days=1)))
+    </file>
+
+    <file path="src/invoicing/db.py">
+    """Database access for invoicing-service (Postgres 16 through psycopg 3)."""
+
+    import os
+    from contextlib import contextmanager
+
+    import psycopg
+
+
+    @contextmanager
+    def connect():
+        conn = psycopg.connect(os.environ["INVOICING_DATABASE_URL"], autocommit=False)
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+    </file>
+
+    <file path="docs/adr/001-postgres-system-of-record.md">
+    # ADR 001: Postgres 16 as the system of record
+
+    **Status:** Accepted, 2026-02-11
+
+    ## Context
+
+    Invoices, customers and payments need transactions across tables and a
+    seven-year audit trail.
+
+    ## Decision
+
+    All invoicing data lives in one Postgres 16 database (`invoicing-db`). The
+    service reaches it through psycopg 3; there is no other datastore.
+
+    ## Consequences
+
+    - Positive: one backup and restore procedure; transactional consistency.
+    - Negative: background work that needs coordination has to use Postgres too,
+      because there is nothing else to coordinate through.
+    </file>
   max_turns: 20
   timeout_seconds: 420
   allowed_tools: [Read, Glob, Grep, Skill, Write]
-context:
-  add_dirs: [fixture]
 graders:
   - name: skill-fired
     type: tool_used

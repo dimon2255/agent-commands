@@ -1,22 +1,155 @@
 schema_version: "1.1"
 name: adr-session-store
 description: >-
-  Skill triggers without the word "ADR" in the prompt, grounds the record in the fixture
-  repo, and writes docs/decisions/002-session-state-store.md in the workspace.
+  Skill triggers without the word "ADR" in the prompt, grounds the record in the files
+  pasted into the prompt, and writes docs/decisions/002-session-state-store.md in the
+  workspace. (The eval workspace is empty and read-only extra directories are not visible
+  to the agent on every platform, so the small repository is inlined.)
 tags: [adr]
 runs: 2
 execution:
   prompt: |
     We're scaling the shop API to three replicas and users keep getting logged out at random.
-    The service's code is in the read-only `fixture` directory you have access to. Decide where
-    session state should live and write the decision up as a decision record for the team.
-    Save it as docs/decisions/002-session-state-store.md in the current working directory (create the
-    folders if needed).
+    Decide where session state should live and write the decision up as a decision record for
+    the team. Save it as docs/decisions/002-session-state-store.md in the current working
+    directory (create the folders if needed). The relevant files from the repository are pasted
+    below with their paths relative to the repository root; cite only these files.
+
+    <file path="README.md">
+    # shop-api
+
+    HTTP API for the Acme web shop: catalogue, cart, checkout and the admin console.
+
+    ## Infrastructure
+
+    - One managed Postgres 15 instance (`shop-db`) is the only datastore. See ADR 001.
+    - The API runs as three replicas behind the cloud load balancer (config/app.yaml).
+    - Peak traffic is about 400 requests per second; roughly 85% of requests are
+      authenticated and read the session on every call.
+
+    ## Known issues
+
+    - Since the move to three replicas on 2026-10-05, users are logged out at
+      random: a request that reaches a replica that did not create the session
+      gets a 401.
+    </file>
+
+    <file path="config/app.yaml">
+    service: shop-api
+    replicas: 3
+
+    deploy:
+      strategy: rolling
+      max_unavailable: 1          # one replica is replaced at a time
+
+    load_balancer:
+      algorithm: round_robin
+      session_affinity: none      # "cookie" affinity is supported but switched off
+
+    database:
+      engine: postgres
+      version: "15"
+      host: shop-db.internal
+      pool_size_per_replica: 20
+      max_connections: 200        # instance limit; peak use is about 70
+    </file>
+
+    <file path="src/app.py">
+    """shop-api entry point."""
+
+    from fastapi import Cookie, FastAPI, HTTPException
+    from session import get_session
+
+    app = FastAPI(title="shop-api")
+
+
+    @app.get("/healthz")
+    def healthz() -> dict:
+        return {"status": "ok"}
+
+
+    @app.get("/me")
+    def me(shop_sid: str | None = Cookie(default=None)) -> dict:
+        session = get_session(shop_sid or "")
+        if session is None:
+            raise HTTPException(status_code=401, detail="not signed in")
+        return {"user_id": session.user_id, "roles": session.roles}
+    </file>
+
+    <file path="src/session.py">
+    """Server-side sessions for the shop API.
+
+    The admin console can revoke every session of a user (revoke_all_for_user),
+    so the server must be able to find and delete sessions by user.
+    """
+
+    from __future__ import annotations
+
+    import secrets
+    import time
+    from dataclasses import dataclass, field
+
+    SESSION_TTL_SECONDS = 30 * 60
+
+
+    @dataclass
+    class Session:
+        session_id: str
+        user_id: int
+        roles: list[str]
+        expires_at: float = field(default_factory=lambda: time.time() + SESSION_TTL_SECONDS)
+
+
+    # Process-local store: every replica keeps its own copy.
+    _SESSIONS: dict[str, Session] = {}
+
+
+    def create_session(user_id: int, roles: list[str]) -> Session:
+        session = Session(secrets.token_urlsafe(32), user_id, roles)
+        _SESSIONS[session.session_id] = session
+        return session
+
+
+    def get_session(session_id: str) -> Session | None:
+        session = _SESSIONS.get(session_id)
+        if session is None or session.expires_at < time.time():
+            _SESSIONS.pop(session_id, None)
+            return None
+        session.expires_at = time.time() + SESSION_TTL_SECONDS  # sliding expiry
+        return session
+
+
+    def revoke_all_for_user(user_id: int) -> int:
+        doomed = [sid for sid, s in _SESSIONS.items() if s.user_id == user_id]
+        for sid in doomed:
+            del _SESSIONS[sid]
+        return len(doomed)
+    </file>
+
+    <file path="docs/adr/001-postgres-primary-datastore.md">
+    # ADR 001: Postgres 15 as the primary datastore
+
+    **Status:** Accepted, 2026-03-02
+
+    ## Context
+
+    The shop needs relational data (orders, carts, customers) with transactions
+    across tables. The team has run Postgres in production for years.
+
+    ## Decision
+
+    Use one managed Postgres 15 instance (`shop-db`, 4 vCPU, 16 GB RAM) for all
+    persistent data. Application code reaches it through SQLAlchemy.
+
+    ## Consequences
+
+    - Positive: one backup, one failover procedure, one set of credentials.
+    - Negative: every feature competes for the same instance; heavy new workloads
+      need a capacity check first. At the time of writing, p95 CPU is 35%.
+    </file>
   max_turns: 20
   timeout_seconds: 420
   allowed_tools: [Read, Glob, Grep, Skill, Write]
-context:
-  add_dirs: [fixture]
 graders:
   - name: skill-fired
     type: tool_used
