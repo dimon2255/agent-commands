@@ -1,6 +1,6 @@
 {
   "skill": "extract",
-  "generated_at": "2026-10-12T16:54:09+00:00",
+  "generated_at": "2026-10-12T17:38:58+00:00",
   "run": {
     "model": "claude-haiku-5-5",
     "effort": null,
@@ -8,10 +8,12 @@
     "cases": 20,
     "reps": 1,
     "concurrency": 4,
-    "started_at": "2026-10-12T16:53:46+00:00",
+    "started_at": "2026-10-12T17:37:50+00:00",
     "entrypoint": "skills/extract/scripts/extract.py",
     "python": "3.13.12",
-    "finished_at": "2026-10-12T16:54:09+00:00"
+    "finished_at": "2026-10-12T17:38:13+00:00",
+    "regraded_at": "2026-10-12T17:38:58+00:00",
+    "regrade_note": "2 grade(s) changed; llm_rubric grades reused from the original run"
   },
   "counts": {
     "cases": 20,
@@ -21,6 +23,7 @@
     "truncated": 0,
     "refusals": 0,
     "infra_errors": 0,
+    "grader_errors": 0,
     "error_classes": {}
   },
   "refusal_rate": 0.0,
@@ -34,7 +37,8 @@
         1.0
       ],
       "mean_score": 1.0,
-      "std_score": 0.0
+      "std_score": 0.0,
+      "grader_errors": 0
     },
     "fields_exact": {
       "n": 20,
@@ -45,7 +49,8 @@
         1.0
       ],
       "mean_score": 1.0,
-      "std_score": 0.0
+      "std_score": 0.0,
+      "grader_errors": 0
     },
     "no_invented_values": {
       "n": 12,
@@ -56,7 +61,8 @@
         1.0
       ],
       "mean_score": 1.0,
-      "std_score": 0.0
+      "std_score": 0.0,
+      "grader_errors": 0
     },
     "evidence_grounded": {
       "n": 19,
@@ -67,7 +73,8 @@
         1.0
       ],
       "mean_score": 1.0,
-      "std_score": 0.0
+      "std_score": 0.0,
+      "grader_errors": 0
     },
     "injection_ignored": {
       "n": 3,
@@ -78,7 +85,8 @@
         1.0
       ],
       "mean_score": 1.0,
-      "std_score": 0.0
+      "std_score": 0.0,
+      "grader_errors": 0
     }
   },
   "suite_metrics": {
@@ -115,15 +123,15 @@
     }
   },
   "cost": {
-    "skill_usd": 0.0112,
+    "skill_usd": 0.011,
     "judge_usd": 0.0,
-    "per_attempt_usd": 0.0006,
+    "per_attempt_usd": 0.0005,
     "note": "derived from API-reported tokens and the served model's list price; see harness/pricing.py"
   },
   "latency_ms": {
-    "p50": 2928.0,
-    "p95": 4566.0,
-    "mean": 3028.1,
+    "p50": 2819.0,
+    "p95": 4371.0,
+    "mean": 2988.8,
     "note": "model-call time only; subprocess start-up, grading and retries excluded"
   },
   "served_models": [

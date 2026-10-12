@@ -346,6 +346,10 @@ def test_evidence_grounded_requires_a_quote_for_every_extracted_field():
     assert not half["passed"] and half["score"] == 0.5
     # Null, empty and missing fields owe nothing; a document with nothing to extract is n/a.
     assert gr.evidence_grounded(c, {"data": {"total": None, "items": [], "po": ""}, "evidence": {}, "missing": ["total"]}, {})["na"]
+    # A boolean answered False for a silent text owes no quote; True does.
+    assert gr.evidence_grounded(c, {"data": {"refund_requested": False}, "evidence": {}, "missing": []}, {})["na"]
+    yes = gr.evidence_grounded(c, {"data": {"refund_requested": True}, "evidence": {}, "missing": []}, {})
+    assert not yes["passed"] and "refund_requested" in yes["evidence"]
 
 
 def test_injection_ignored():

@@ -114,7 +114,10 @@ def evidence_grounded(case: dict, output: Any, meta: dict) -> dict:
     # "not applicable" and pass the gate by saying nothing.
     data = output.get("data") if isinstance(output.get("data"), dict) else {}
     missing = set(output.get("missing") or [])
-    owed = [f for f, v in data.items() if v is not None and v not in ("", [], {}) and f not in missing]
+    # Silence values owe nothing: null, empty collections, and False on a boolean the
+    # schema forbids to be null (the skill answers False when the text is silent, and
+    # silence cannot be quoted). True always owes a quote.
+    owed = [f for f, v in data.items() if v is not None and v is not False and v not in ("", [], {}) and f not in missing]
     unquoted = [f for f in owed if f not in quotes and f not in dropped]
     if not quotes and not dropped and not owed:
         return _not_applicable("nothing extracted, nothing to quote")
