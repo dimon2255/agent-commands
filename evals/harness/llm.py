@@ -58,7 +58,7 @@ class JudgeResult:
 
 
 class Judge:
-    def __init__(self, model: str = DEFAULT_JUDGE_MODEL, effort: str = "medium", max_tokens: int = 2000):
+    def __init__(self, model: str = DEFAULT_JUDGE_MODEL, effort: str = "medium", max_tokens: int = 8000):
         import anthropic  # imported lazily so unit tests never need the SDK
 
         self._anthropic = anthropic

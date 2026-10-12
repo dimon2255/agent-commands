@@ -16,5 +16,9 @@ metrics:
   - name: custom_len
     grader: python
     function: answer_is_short
+  - name: edge_only
+    grader: python
+    function: edge_only
 thresholds:
   answer_exact: 0.5
+  edge_only: 0.5

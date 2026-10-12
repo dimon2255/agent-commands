@@ -118,6 +118,7 @@ def smoke(suite: SkillSuite) -> dict:
     det_metrics = [m for m in suite.metrics if m["grader"] != "llm_rubric"]
     oracle_fail: list[str] = []
     null_pass: list[str] = []
+    null_unfalsifiable: list[str] = []
     meta = {"skill": suite.name, "status": "ok", "served_model": "oracle"}
     null_output = suite.config.get("null_output", None)
     for case in suite.cases:
@@ -128,10 +129,15 @@ def smoke(suite: SkillSuite) -> dict:
             ctx = GradeContext(case=case, output=gold, meta=meta, custom_module=suite.custom_module)
             for m in det_metrics:
                 g = run_metric(m, ctx)
+                if g.na:
+                    continue  # metric does not apply to this case; nothing to verify
                 if not g.passed:
                     oracle_fail.append(f"{case['id']}/{m['name']}: {g.evidence}")
         ctx = GradeContext(case=case, output=null_output, meta=meta, custom_module=suite.custom_module)
-        if det_metrics and all(run_metric(m, ctx).passed for m in det_metrics):
+        applicable = [g for g in (run_metric(m, ctx) for m in det_metrics) if not g.na]
+        if not applicable:
+            null_unfalsifiable.append(case["id"])  # no deterministic metric can reject a null answer here
+        elif all(g.passed for g in applicable):
             null_pass.append(case["id"])
     return {
         "skill": suite.name,
@@ -139,7 +145,8 @@ def smoke(suite: SkillSuite) -> dict:
         "deterministic_metrics": [m["name"] for m in det_metrics],
         "oracle_failures": oracle_fail,
         "null_baseline_passes": null_pass,
-        "ok": not oracle_fail and not null_pass,
+        "null_unfalsifiable": null_unfalsifiable,
+        "ok": not oracle_fail and not null_pass and not null_unfalsifiable,
     }
 
 
@@ -286,7 +293,8 @@ class Runner:
                 (rows if kind == "row" else errors).append(payload)
                 mark = {"ok": "✓", "truncated": "✂", "refusal": "⛔"}.get(payload.get("status"), "✗")
                 detail = payload.get("failure_class") or " ".join(
-                    f"{k}={'P' if v['passed'] else 'F'}" for k, v in (payload.get("grades") or {}).items()
+                    f"{k}={'-' if v.get('na') else ('P' if v['passed'] else 'F')}"
+                    for k, v in (payload.get("grades") or {}).items()
                 )
                 print(f"  {mark} {payload['case_id']} r{payload['rep']} {detail}", file=sys.stderr)
                 _write_jsonl(out_dir / "results.jsonl", rows)

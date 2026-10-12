@@ -58,10 +58,23 @@ def summarize(
     thresholds = suite_cfg.get("thresholds", {}) or {}
     gates = {}
     for name, floor in thresholds.items():
-        rate = metrics.get(name, {}).get("pass_rate")
-        gates[name] = {"threshold": floor, "pass_rate": rate, "passed": (rate is not None and rate >= floor)}
+        m = metrics.get(name, {})
+        rate = m.get("pass_rate")
+        if not m.get("n"):
+            # No applicable scored rows (filtered run, or every row was n/a): the gate is not
+            # evaluated rather than failed, and the summary says so.
+            gates[name] = {"threshold": floor, "pass_rate": None, "n": 0, "passed": None}
+        else:
+            gates[name] = {"threshold": floor, "pass_rate": rate, "n": m["n"], "passed": rate >= floor}
     infra_error_count = len(errors)
-    gate_passed = all(g["passed"] for g in gates.values()) and (rows or not errors)
+    gate_reasons: list[str] = []
+    if not scored:
+        gate_reasons.append("no scored attempts")
+    if infra_error_count:
+        gate_reasons.append(f"{infra_error_count} infrastructure error(s): run is incomplete")
+    gate_reasons += [f"{n} below threshold" for n, g in gates.items() if g["passed"] is False]
+    gates_skipped = [n for n, g in gates.items() if g["passed"] is None]
+    gate_passed = not gate_reasons
 
     error_classes: dict[str, int] = defaultdict(int)
     for e in errors:
@@ -99,6 +112,8 @@ def summarize(
         },
         "served_models": served_models,
         "gates": gates,
+        "gates_skipped": gates_skipped,
+        "gate_reasons": gate_reasons,
         "gate_passed": bool(gate_passed),
     }
 
@@ -112,8 +127,15 @@ def render_markdown(summary: dict, rows: list[dict], errors: list[dict]) -> str:
     c = s["counts"]
     out: list[str] = []
     out.append(f"# Eval report: `{s['skill']}`\n")
-    out.append(f"Generated {s['generated_at']} · model `{s['run'].get('model')}` · judge `{s['run'].get('judge_model')}` · effort `{s['run'].get('effort')}`\n")
-    out.append(f"**Gate:** {'PASS' if s['gate_passed'] else 'FAIL'}\n")
+    out.append(
+        f"Generated {s['generated_at']} · model `{s['run'].get('model')}` · judge `{s['run'].get('judge_model') or 'none'}` · effort `{s['run'].get('effort') or 'script default'}`\n"
+    )
+    gate_line = f"**Gate:** {'PASS' if s['gate_passed'] else 'FAIL'}"
+    if s.get("gate_reasons"):
+        gate_line += " (" + "; ".join(s["gate_reasons"]) + ")"
+    if s.get("gates_skipped"):
+        gate_line += f" · not evaluated (no applicable rows): {', '.join(f'`{n}`' for n in s['gates_skipped'])}"
+    out.append(gate_line + "\n")
     out.append("## Counts\n")
     out.append("| cases | reps | attempts | scored | truncated | refusals | infra errors |")
     out.append("|---:|---:|---:|---:|---:|---:|---:|")
@@ -125,7 +147,12 @@ def render_markdown(summary: dict, rows: list[dict], errors: list[dict]) -> str:
     out.append("|---|---:|---:|---|---:|---|")
     for name, m in s["metrics"].items():
         gate = s["gates"].get(name)
-        gate_s = "" if not gate else (f"≥ {_pct(gate['threshold'])} {'✅' if gate['passed'] else '❌'}")
+        if not gate:
+            gate_s = ""
+        elif gate["passed"] is None:
+            gate_s = f"≥ {_pct(gate['threshold'])} (no rows)"
+        else:
+            gate_s = f"≥ {_pct(gate['threshold'])} {'✅' if gate['passed'] else '❌'}"
         ci = f"[{_pct(m['ci95'][0])}, {_pct(m['ci95'][1])}]" if m["n"] else "—"
         out.append(f"| `{name}` | {m['n']} | {_pct(m['pass_rate'])} | {ci} | {m['mean_score']:.3f} | {gate_s} |")
     out.append("")

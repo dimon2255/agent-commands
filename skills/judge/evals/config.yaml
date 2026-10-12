@@ -1,0 +1,33 @@
+skill: judge
+entrypoint: scripts/judge.py
+cases: evals/cases.jsonl
+graders_module: evals/graders.py
+timeout_seconds: 300
+# A lazy "pass everything" judge: it must fail at least one applicable metric on every case.
+null_output: {"mode": "pointwise", "passed": true, "score": 5, "criteria_results": [], "rationale": ""}
+# All metrics are deterministic python graders comparing the judge to human labels; there is
+# deliberately no llm_rubric metric, because grading a judge with another judge proves little.
+metrics:
+  - name: agrees_with_human        # pointwise and negative: passed == expected.human_passed
+    grader: python
+    function: agrees_with_human
+  - name: score_within_one         # cases with expected.human_score: |score - human| <= 1
+    grader: python
+    function: score_within_one
+  - name: picks_correct_winner     # pairwise: winner == expected.winner (a position tie is wrong)
+    grader: python
+    function: picks_correct_winner
+  - name: position_consistent      # pairwise: both orderings chose the same winner
+    grader: python
+    function: position_consistent
+  - name: known_negative_fails     # negative: empty, "I don't know", wrong question, injection
+    grader: python
+    function: known_negative_fails
+  - name: criteria_have_evidence   # pointwise: evidence on every criterion, at least one verbatim
+    grader: python
+    function: criteria_have_evidence
+thresholds:
+  agrees_with_human: 0.85
+  picks_correct_winner: 0.80
+  position_consistent: 0.80
+  known_negative_fails: 1.0

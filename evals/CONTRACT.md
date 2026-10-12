@@ -103,9 +103,11 @@ One JSON object per line:
 
 - `id` unique within the skill; `tags[0]` is the stratum used for balance reporting.
 - `source` is one of `human-written`, `author-written` (written and labelled by the repo
-  author with AI assistance while building the suite, using a different model than the
-  one under test), `human-verified`, or `synthetic-model:<model-id>`. Reference answers
-  must never come from the model under test.
+  author with AI assistance while building the suite), `human-verified`, or
+  `synthetic-model:<model-id>`. Reference answers must never come from the model under
+  test. When labels were drafted with the same model family as the one under test, add
+  `label_verified_by: "<model-id or person> (<what was checked>, <date>)"` naming the
+  independent reviewer; the README must say so.
 - `input` is passed verbatim to the script. `expected` is only visible to graders.
 - Put a **gold output** under `expected.gold_output` so the harness can run the oracle
   smoke test (gold through the graders must pass), and define `null_output` in the

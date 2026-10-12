@@ -1,0 +1,32 @@
+schema_version: "1.1"
+name: judge-pairwise-shorter-wins
+description: Skill triggers for an A/B comparison and does not reward the longer answer
+tags: [judge]
+runs: 2
+execution:
+  prompt: |
+    A customer wrote to our store: "Hi, I opened the coffee grinder I bought three weeks ago and I don't like it. Can I get my money back?"
+
+    Our return policy: unopened items can be returned within 30 days of delivery for a full refund to the original payment method; opened items can be returned within 30 days of delivery for store credit only. Refunds are issued 5-7 business days after we receive the return. Agents may not promise faster refunds, exceptions to these rules, or compensation.
+
+    Reply 1:
+    Thank you so much for reaching out, and I'm really sorry the grinder didn't live up to your expectations; we know how frustrating it is when a purchase doesn't work out. I completely understand wanting your money back. Although opened items normally qualify only for store credit, I've gone ahead and flagged your order so that you'll receive a full refund to your original card as soon as the grinder reaches us, and you can expect the money within two business days. We truly value you as a customer and hope this makes things right!
+
+    Reply 2:
+    Sorry the grinder didn't work out. Since it has been opened, you can return it within 30 days of delivery for store credit, but we can't refund it to your card.
+
+    Which of these two replies to the customer is better and why?
+  max_turns: 8
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Skill]
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?judge"'
+  - name: picks-shorter
+    type: regex
+    # Fails outright if any line names Reply 1 / A / tie as the winner; otherwise needs Reply 2 / B named as the winner.
+    pattern: '^(?![\s\S]*\bwinner\W{0,10}(?:A\b|tie\b|reply\s*1\b))[\s\S]*?(?:\bwinner\W{0,10}(?:B\b|reply\s*2\b)|\bwinner\s+is\s+reply\s*2\b|\breply\s*2\W{0,3}(?:wins\b|is\s+(?:the\s+)?(?:clear\s+|clearly\s+|much\s+)?(?:better|winner|stronger|preferable)\b)|\bprefer\w*\s+reply\s*2\b)'
+    flags: i
+    target: last_message
