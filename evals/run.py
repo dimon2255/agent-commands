@@ -43,6 +43,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--allow-model-mismatch", action="store_true")
     p.add_argument("--out-dir", default=None)
     p.add_argument("--resume", default=None, help="existing run directory to continue")
+    p.add_argument("--no-latest", action="store_true", help="do not copy this run into results/api/<skill>/latest (comparison runs)")
     p.add_argument("--smoke", action="store_true", help="oracle + null baseline through graders; no API calls")
     p.add_argument("--list", action="store_true", help="list suites and cases, then exit")
     args = p.parse_args(argv)
@@ -82,6 +83,7 @@ def main(argv: list[str] | None = None) -> int:
         allow_model_mismatch=args.allow_model_mismatch,
         out_dir=Path(args.out_dir) if args.out_dir else None,
         resume=Path(args.resume) if args.resume else None,
+        update_latest=not args.no_latest,
     )
     all_ok = True
     for s in suites:

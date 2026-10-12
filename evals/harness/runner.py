@@ -54,6 +54,7 @@ class RunOptions:
     out_dir: Path | None = None
     resume: Path | None = None
     results_root: Path | None = None  # defaults to evals/results/api
+    update_latest: bool = True  # False for comparison runs that must not replace latest/
     extra_env: dict[str, str] = field(default_factory=dict)
 
 
@@ -320,10 +321,11 @@ class Runner:
         summary = summarize(rows, errors, suite.config, run_meta, suite_metrics)
         (out_dir / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
         (out_dir / "report.md").write_text(render_markdown(summary, rows, errors), encoding="utf-8")
-        latest = results_root / suite.name / "latest"
-        latest.mkdir(parents=True, exist_ok=True)
-        for name in ("summary.json", "report.md", "results.jsonl", "errors.jsonl"):
-            if (out_dir / name).exists():
-                shutil.copy2(out_dir / name, latest / name)
+        if opts.update_latest:
+            latest = results_root / suite.name / "latest"
+            latest.mkdir(parents=True, exist_ok=True)
+            for name in ("summary.json", "report.md", "results.jsonl", "errors.jsonl"):
+                if (out_dir / name).exists():
+                    shutil.copy2(out_dir / name, latest / name)
         shutil.rmtree(workdir, ignore_errors=True)
         return out_dir, summary

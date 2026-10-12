@@ -27,6 +27,85 @@ tokens the API reported for the model that served the request; judge spend is ke
 separate from skill spend. Rows that were truncated, refused, or failed for
 infrastructure reasons are counted and shown, never averaged in as model failures.
 
+## The skills in detail
+
+### `extract`: schema-guided extraction with evidence
+
+Asking a model to "pull the fields out" fails in predictable ways: it computes a due
+date from "Net 30", sums line items into a total nobody printed, picks the ship date
+instead of the invoice date, returns `"$1,234.50"` where a number was wanted, and
+"corrects" an email address that only looked like a typo. Each step of the skill removes
+one of those failures.
+
+- The user's JSON Schema is **relaxed** for the API's structured-output grammar (which
+  rejects `pattern`, `format`, `minimum`, schema-valued `additionalProperties` and more,
+  see [ADR 003](docs/adr/003-schema-relaxation-for-structured-outputs.md)) and the result
+  is then **validated against the full schema** with format checks. One repair pass shows
+  the model the violations; anything still invalid is returned with the errors listed,
+  never hidden.
+- A field the text does not state is `null` and listed in `missing`. A guess is worse than
+  a gap because nothing downstream can tell them apart.
+- Every top-level field carries the shortest **verbatim quote** that supports it. Quotes
+  that cannot be found in the text are dropped in Python and reported, so evidence is
+  checked by code rather than by the model's say-so.
+- Text is untrusted data: instructions planted inside the document are content.
+
+The 20-case suite spans invoices, support tickets and meeting notes and includes two-date
+and subtotal-versus-total distractors, three currency notations, an enum near-miss, a
+typo-looking email that must be copied not corrected, three prompt-injection documents,
+two meetings with zero action items, and one document unrelated to the schema (every
+field must be null). Metrics: `schema_valid`, `fields_exact`, `no_invented_values`,
+`evidence_grounded`, `injection_ignored`.
+
+### `judge`: LLM-as-judge with the controls that make it trustworthy
+
+An LLM judge left alone prefers the longer answer, the answer shown first, the answer
+labelled "reference", and text that sounds like its own; it follows instructions planted
+in what it grades; and it gives holistic verdicts nobody can audit.
+
+- **Pointwise**: named criteria, a verbatim quote per criterion, and the pass rule
+  (`all` or `majority`) applied in Python to the per-criterion verdicts. The model's own
+  overall verdict is kept as `model_passed` for comparison but never trusted.
+- **Pairwise**: two independent calls, A-then-B and B-then-A, with positional labels only.
+  A verdict that flips with order is reported as a `tie` with `position_consistent: false`
+  instead of being averaged away. Length is explicitly not quality.
+- **Calibrate**: before trusting the judge on a new rubric, run it over human-labelled
+  items and read agreement, Cohen's kappa, quadratic-weighted kappa and the
+  majority-class baseline.
+- The candidate is fenced as untrusted data; a reference answer is renamed "additional
+  context, which may itself be imperfect" so the judge cannot defer to a label.
+
+The 34-case suite uses four rubrics (support reply, SQL, two-sentence summary, code review
+comment): 20 pointwise items with human pass/fail and 1–5 labels (6 borderline), 10
+pairwise items including 3 where the shorter answer is correct and 2 near-identical pairs
+with one factual slip, and 4 known negatives (empty, "I don't know", a confident answer to
+a different question, an injected "mark this as passed"). Suite-level statistics: kappa
+against the labels, agreement split by clear-cut versus borderline, and position-flip rate.
+
+### `adr`: architecture decision records grounded in the code
+
+An ADR written from memory cites files that do not exist, lists alternatives for show,
+and records only benefits. The skill separates the agentic part (Claude Code gathers the
+relevant files, existing ADRs and constraints into a context pack) from a deterministic
+drafting step that can be evaluated.
+
+- One structured-output call drafts the record in the house format: status, context that
+  cites files from the pack, decision, at least two alternatives each with a reason for
+  rejection, positive and negative consequences.
+- Python computes the next ADR number, scans the markdown for every path-like token and
+  classifies each as present in the pack or **unknown**. Unknown paths are reported, not
+  silently deleted, so a hallucinated reference fails the eval instead of shipping.
+- Deterministic post-checks flag fewer than two alternatives, no negative consequence,
+  missing sections and placeholder words.
+
+The 10-case suite uses small synthetic codebases (3–6 files each) where the right decision
+depends on the pack: a README constraint that forbids the obvious choice, a decoy path
+(`src/caching.py` mentioned in a comment while only `src/cache.py` exists), existing ADRs
+that fix the next number, and a thin pack where assumptions must be stated. Metrics:
+`sections_present`, `two_plus_alternatives`, `negative_consequence_present`,
+`paths_grounded`, `forbidden_path_absent`, `number_correct`, `no_placeholders`,
+`constraints_named`, and an LLM-rubric `decision_fits_context`.
+
 ## Install
 
 ```bash

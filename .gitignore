@@ -6,9 +6,12 @@ __pycache__/
 .ruff_cache/
 *.egg-info/
 
-# Timestamped eval runs are reproducible from the committed summary; keep only latest/
+# Timestamped eval runs are reproducible from the committed summary; keep latest/ and
+# the summary/report/rows of named comparison runs, not their full trajectories
 evals/results/api/*/20*/
 evals/results/api/*/work/
+evals/results/api/*/compare-*/trajectories/
+evals/results/api/*.log
 evals/native/results/
 
 # Local scratch
