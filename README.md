@@ -26,6 +26,12 @@ scored attempts; the bracket is the 95% Wilson interval.
 | `judge` | 34 × 2 | `agrees_with_human` 48/48 [93%, 100%] · Cohen's κ 1.00, weighted κ 0.98 · `picks_correct_winner` 20/20 · `position_consistent` 20/20 (flip rate 0) · `known_negative_fails` 8/8 | $0.020 | 34/34, κ 1.00, weighted κ 0.96 at $0.0006 |
 | `adr` | 10 × 2 | `sections_present`, `two_plus_alternatives`, `negative_consequence_present`, `number_correct`, `no_placeholders` 20/20 [84%, 100%] · `paths_grounded` 20/20 (0 hallucinated paths) · `constraints_named` 12/12 · `decision_fits_context` (LLM rubric) 19/20 [76%, 99%] | $0.100 + $0.015 judge | 9/9 scored attempts pass everything including the judge; 1 attempt truncated at the output cap (reported, not scored); $0.006 |
 
+Independent reproduction on a GitHub-hosted runner, 2026-10-12
+([api-evals run 38292791709](https://github.com/dimon2255/agent-commands/actions/runs/38292791709),
+1 rep per case, `claude-opus-5-5` for skill and judge): every deterministic metric passed on
+all 64 attempts, `decision_fits_context` 8/10 (exactly at its 0.80 gate), 0 infrastructure
+errors, $1.95 skill spend plus $0.15 judge. The reports are the run's `eval-results` artifact.
+
 Native `claude plugin eval` (inside Claude Code, two-arm ablation, 2 runs per case):
 <!-- NATIVE:START -->
 

@@ -16,6 +16,7 @@ native `claude plugin eval` suite. Built 2026-10-12.
 | 7. Native plugin evals run and recorded | done 2026-10-12 | 6 cases, two arms, `evals/native/latest.json` + `RESULTS.md` |
 | 8. Independent review and fixes | done 2026-10-12 | REQUEST_CHANGES with 3 blockers + 2 must-fix; all addressed, 134 tests |
 | 9. Public repo `dimon2255/agent-commands` | done 2026-10-12 | CI on push; API evals on dispatch with `CLAUDE_API_KEY` secret |
+| 10. API evals reproduced in GitHub Actions | done 2026-10-12 | dispatch run 38292791709: 1 rep, every gate passed, `adr` judge 8/10 at the 0.80 gate, 0 infra errors, $2.10 |
 
 ## Decisions made during implementation
 
