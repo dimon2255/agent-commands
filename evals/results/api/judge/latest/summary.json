@@ -1,0 +1,185 @@
+{
+  "skill": "judge",
+  "generated_at": "2026-10-12T16:55:05+00:00",
+  "run": {
+    "model": "claude-opus-5-5",
+    "effort": null,
+    "judge_model": null,
+    "cases": 34,
+    "reps": 2,
+    "concurrency": 4,
+    "started_at": "2026-10-12T16:54:04+00:00",
+    "entrypoint": "skills/judge/scripts/judge.py",
+    "python": "3.13.12",
+    "finished_at": "2026-10-12T16:55:05+00:00"
+  },
+  "counts": {
+    "cases": 34,
+    "reps": 2,
+    "attempts": 68,
+    "scored": 68,
+    "truncated": 0,
+    "refusals": 0,
+    "infra_errors": 0,
+    "error_classes": {}
+  },
+  "refusal_rate": 0.0,
+  "metrics": {
+    "agrees_with_human": {
+      "n": 48,
+      "passed": 48,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.9259,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0
+    },
+    "score_within_one": {
+      "n": 48,
+      "passed": 48,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.9259,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0
+    },
+    "picks_correct_winner": {
+      "n": 20,
+      "passed": 20,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.8389,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0
+    },
+    "position_consistent": {
+      "n": 20,
+      "passed": 20,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.8389,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0
+    },
+    "known_negative_fails": {
+      "n": 8,
+      "passed": 8,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.6756,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0
+    },
+    "criteria_have_evidence": {
+      "n": 46,
+      "passed": 46,
+      "pass_rate": 1.0,
+      "ci95": [
+        0.9229,
+        1.0
+      ],
+      "mean_score": 1.0,
+      "std_score": 0.0
+    }
+  },
+  "suite_metrics": {
+    "pointwise_n": 48,
+    "agreement": 1.0,
+    "agreement_clear_cut": 1.0,
+    "n_clear_cut": 28,
+    "agreement_borderline": 1.0,
+    "n_borderline": 12,
+    "agreement_known_negative": 1.0,
+    "n_known_negative": 8,
+    "majority_class_baseline": 0.583,
+    "cohen_kappa_pass_fail": 1.0,
+    "weighted_kappa_score_1_5": 0.979,
+    "judge_pass_rate": 0.417,
+    "human_pass_rate": 0.417,
+    "pairwise_n": 20,
+    "position_flip_rate": 0.0
+  },
+  "by_tag": {
+    "negative": {
+      "n": 8,
+      "agrees_with_human": 1.0,
+      "score_within_one": 1.0,
+      "picks_correct_winner": null,
+      "position_consistent": null,
+      "known_negative_fails": 1.0,
+      "criteria_have_evidence": 1.0
+    },
+    "pairwise": {
+      "n": 20,
+      "agrees_with_human": null,
+      "score_within_one": null,
+      "picks_correct_winner": 1.0,
+      "position_consistent": 1.0,
+      "known_negative_fails": null,
+      "criteria_have_evidence": null
+    },
+    "pointwise": {
+      "n": 40,
+      "agrees_with_human": 1.0,
+      "score_within_one": 1.0,
+      "picks_correct_winner": null,
+      "position_consistent": null,
+      "known_negative_fails": null,
+      "criteria_have_evidence": 1.0
+    }
+  },
+  "cost": {
+    "skill_usd": 1.389,
+    "judge_usd": 0.0,
+    "per_attempt_usd": 0.0204,
+    "note": "derived from API-reported tokens and the served model's list price; see harness/pricing.py"
+  },
+  "latency_ms": {
+    "p50": 5927.0,
+    "p95": 9251.0,
+    "mean": 5898.8,
+    "note": "model-call time only; subprocess start-up, grading and retries excluded"
+  },
+  "served_models": [
+    "claude-opus-5-5"
+  ],
+  "gates": {
+    "agrees_with_human": {
+      "threshold": 0.85,
+      "pass_rate": 1.0,
+      "n": 48,
+      "passed": true
+    },
+    "picks_correct_winner": {
+      "threshold": 0.8,
+      "pass_rate": 1.0,
+      "n": 20,
+      "passed": true
+    },
+    "position_consistent": {
+      "threshold": 0.8,
+      "pass_rate": 1.0,
+      "n": 20,
+      "passed": true
+    },
+    "known_negative_fails": {
+      "threshold": 1.0,
+      "pass_rate": 1.0,
+      "n": 8,
+      "passed": true
+    }
+  },
+  "gates_skipped": [],
+  "gate_reasons": [],
+  "gate_passed": true
+}

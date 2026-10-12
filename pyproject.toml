@@ -18,6 +18,11 @@ dev = [
   "ruff>=0.6",
 ]
 
+[tool.uv]
+# `claude plugin eval` refuses a plugin tree that contains hard-linked files, and uv's
+# default link mode hard-links packages from its cache into .venv on the same volume.
+link-mode = "copy"
+
 [tool.pytest.ini_options]
 testpaths = ["tests", "skills"]
 pythonpath = ["."]
